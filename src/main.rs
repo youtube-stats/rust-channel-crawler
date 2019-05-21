@@ -32,11 +32,14 @@ fn main() {
             let n: usize = 31;
 
             let channel_serial: String = channel_url.chars().skip(31).collect();
-            let params: &[&String; 1] = &[&channel_serial];
             let query: &str = INSERT;
 
-            let result: u64 = conn.execute(query, params).unwrap();
-            assert_eq!(result, 1);
+            let result: u64 = conn.execute(query, &[&channel_serial]).unwrap();
+            if result == 1{
+                println!("Inserting {}", channel_serial);
+            } else {
+                println!("Ignoring {}", channel_serial);
+            }
         }
     }
 
