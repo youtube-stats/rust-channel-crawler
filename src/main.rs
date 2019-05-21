@@ -29,16 +29,15 @@ fn main() {
 
         for element in doc.select(&channels) {
             let channel_url: &str = element.value().attr("href").unwrap();
-            let n: usize = 31;
-
             let channel_serial: String = channel_url.chars().skip(31).collect();
-            let query: &str = INSERT;
 
-            let result: u64 = conn.execute(query, &[&channel_serial]).unwrap();
+            let result: u64 = conn.execute(INSERT, &[&channel_serial]).unwrap();
             if result == 1{
                 println!("Inserting {}", channel_serial);
-            } else {
+            } else  if result == 0{
                 println!("Ignoring {}", channel_serial);
+            } else {
+                panic!("Something bad happened - could not insert {}", channel_serial);
             }
         }
     }
