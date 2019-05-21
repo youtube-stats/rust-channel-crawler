@@ -1,5 +1,6 @@
 extern crate postgres;
 extern crate reqwest;
+extern crate scraper;
 extern crate serde;
 extern crate serde_json;
 
@@ -9,23 +10,34 @@ const INSERT: &'static str =
 const PAGE_LIMIT: u32 = 114462;
 const RANGE_LIMIT: u32 = PAGE_LIMIT + 1;
 
-struct Channel {
-    id: u32,
-    serial: String
-}
-
 fn main() {
-    /*let params: &'static str = POSTGRESQL_URL;
+    let params: &'static str = POSTGRESQL_URL;
     let tls: postgres::TlsMode = postgres::TlsMode::None;
 
     let conn: postgres::Connection =
-        postgres::Connection::connect(params, tls).unwrap();*/
+        postgres::Connection::connect(params, tls).unwrap();
 
     for i in 1..RANGE_LIMIT {
-        let url: String =
-            format!("http://www.channelcrawler.com/eng/results/136614/page:{}", i);
-        let body: String = reqwest::get(url.as_str()).unwrap().text().unwrap();
-        println!("{}", body);
+        let url: String = format!("http://www.channelcrawler.com/eng/results/136614/sort:Channel.subscribers/direction:desc/page:{}", i);
+        let document: String = reqwest::get(url.as_str()).unwrap().text().unwrap();
+        let document: &str = document.as_str();
+
+        let doc: scraper::Html = scraper::Html::parse_document(document);
+
+        let selectors: &str = "div.channel > h4 > a[href]";
+        let channels: scraper::Selector = scraper::Selector::parse(selectors).unwrap();
+
+        for element in doc.select(&channels) {
+            let channel_url: &str = element.value().attr("href").unwrap();
+            let n: usize = 31;
+
+            let channel_serial: String = channel_url.chars().skip(31).collect();
+            let params: &[&String; 1] = &[&channel_serial];
+            let query: &str = INSERT;
+
+            let result: u64 = conn.execute(query, params).unwrap();
+            assert_eq!(result, 1);
+        }
     }
 
     println!("Hello, world!");
